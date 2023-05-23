@@ -1,6 +1,7 @@
 
 use std::cmp::Ordering;
-
+use std::collections::HashMap;
+use std::hash::Hash;
 
 // PARAMS.PY
 
@@ -20,6 +21,8 @@ const SUCCESS_RATE: f64 = 5.0 / (1000 * 1000) as f64;   // is it normal to do th
 /////////////////// DIRECTION.PY /////////////////
 #[derive(Debug)]
 #[derive(PartialEq)]
+#[derive(Eq)]
+#[derive(Hash)]
 enum Direction {
     Alph,
     NonAlph,
@@ -55,29 +58,43 @@ enum FeeType {
 // so we never use a fee rate as a fee amount or something like this
 
 #[derive(Debug)]
-struct Amount(u64);
+struct Satoshi(u64);
 
-impl Amount {
-    fn add(&self, other_amount: Amount) -> Amount {
-        Amount(self.0 + other_amount.0)
+impl Satoshi {
+    fn add(&self, other_amount: &Satoshi) -> Satoshi {
+        Satoshi(self.0 + other_amount.0)
     }
-    fn mul(&self, fee_rate: &FeeRate) -> Amount {
-        Amount((self.0 as f64 * fee_rate.0) as u64)
+    fn mul(&self, fee_rate: &FeeRate) -> Satoshi {
+        Satoshi((self.0 as f64 * fee_rate.0) as u64)
     }
 }
 
 #[derive(Debug)]
 struct FeeRate(f64);
 
+
+#[derive(Debug)]
+struct Fee {
+    base_fee: Satoshi,
+    fee_rate: FeeRate,
+}
+impl Default for Fee {
+    fn default() -> Fee {
+        Fee {
+            base_fee: Satoshi(0),
+            fee_rate: FeeRate(0.0),
+        }
+    }
+}
+
+
 ////////////////// CHANNELDIRECTION.PY ////////////
 
 #[derive(Debug)]
 struct ChannelInDirection {
     num_slots: u16,
-    upfront_base_fee: Amount,
-    upfront_fee_rate: FeeRate,
-    success_base_fee: Amount,
-    success_fee_rate: FeeRate,
+    upfront_fee: Fee,
+    success_fee: Fee,
     deliberately_fail_prob: f64,    // can I define a sub-type of float for probabilities to check 0<=x<=1?
     spoofing_error_type: Option<ErrorType>,
 }
@@ -86,11 +103,9 @@ struct ChannelInDirection {
 impl Default for ChannelInDirection {
     fn default() -> ChannelInDirection {
         ChannelInDirection {
-            num_slots:          NUM_SLOTS,
-            upfront_base_fee:   Amount(0),
-            upfront_fee_rate:   FeeRate(0.0),
-            success_base_fee:   Amount(0),
-            success_fee_rate:   FeeRate(0.0),
+            num_slots: NUM_SLOTS,
+            upfront_fee: Fee::default(),
+            success_fee: Fee::default(),
             deliberately_fail_prob: 0.0,
             spoofing_error_type: None,
         }
@@ -103,42 +118,48 @@ impl ChannelInDirection {
     // a "static method" independent of self
     // TODO: this is only useful if concrete fee functions are partial applications of this thing
     // does Rust have lambdas (closures)? Partial application?
-    fn generic_fee_function(base: &Amount, rate: &FeeRate, amount: Amount) -> Amount {
-        base.add(amount.mul(rate))
+    fn generic_fee_function(fee: &Fee, amount: &Satoshi) -> Satoshi {
+        amount.mul(&fee.fee_rate).add(&fee.base_fee)
     }
 
-    fn set_fee(&mut self, fee_type: FeeType, base_fee: Amount, fee_rate: FeeRate) {
+    fn set_fee(&mut self, fee_type: FeeType, fee: Fee) {
         // should I conver ints to Amounts and floats to FeeRates inside or outside the function?
         // FIXME: in Python, I also assign fee_function here as lambda
         match fee_type {
-            FeeType::Success => {
-                self.success_base_fee = base_fee;
-                self.success_fee_rate = fee_rate;
-            },
-            FeeType::Upfront => {
-                self.upfront_base_fee = base_fee;
-                self.upfront_fee_rate = fee_rate;
-            }
+            FeeType::Success => self.success_fee = fee,
+            FeeType::Upfront => self.upfront_fee = fee,
         }
     }
 
-    fn requires_fee(&self, fee_type: FeeType, amount: Amount) -> Amount {
+    fn requires_fee(&self, fee_type: Option<FeeType>, amount: &Satoshi) -> Satoshi {
         match fee_type {
-            FeeType::Success => {
-                ChannelInDirection::generic_fee_function(
-                    &self.success_base_fee,
-                    &self.success_fee_rate,
-                    amount)
+            Some(FeeType::Success) => {
+                ChannelInDirection::generic_fee_function(&self.success_fee, &amount)
             }
-            FeeType::Upfront => {
-                ChannelInDirection::generic_fee_function(
-                    &self.upfront_base_fee,
-                    &self.upfront_fee_rate,
-                    amount)
+            Some(FeeType::Upfront) => {
+                ChannelInDirection::generic_fee_function(&self.upfront_fee, &amount)
             }
+            None => {
+                let upfront_fee = ChannelInDirection::generic_fee_function(&self.upfront_fee, &amount);
+                let success_fee = ChannelInDirection::generic_fee_function(&self.success_fee, &amount);
+                success_fee.add(&upfront_fee)
+            }
+
         }
     }
 }
+
+
+//////////////////// CHANNEL.PY //////////////////////////
+
+#[derive(Debug)]
+struct Channel {
+    capacity: Satoshi,
+    cid: String,
+    channel_in_direction: HashMap<Direction, Option<ChannelInDirection>>,
+}
+
+
 
 
 fn main() {
@@ -150,14 +171,31 @@ fn main() {
     let are_equal = dir1 == dir2;
     println!("{:?} {:?} {}",dir1, dir2, are_equal);
 
-    let ch_in_dir = ChannelInDirection {
+    let mut ch_in_dir = ChannelInDirection {
         num_slots: 500,
-        success_base_fee: Amount(1),
-        success_fee_rate: FeeRate(0.03),
+        success_fee: Fee { base_fee: Satoshi(1), fee_rate: FeeRate(0.03) },
         ..Default::default()
     };
     println!("{:?}", ch_in_dir);
-    let test_amount = 100;
-    let test_fee = ch_in_dir.requires_fee(FeeType::Success, Amount(test_amount));
-    println!("Payment of {:?} requires fee {:?}", test_amount, test_fee)
+    let test_amount = Satoshi(100);
+    println!(
+        "Payment of {:?} requires fee {:?}",
+        test_amount,
+        ch_in_dir.requires_fee(None, &test_amount));
+    ch_in_dir.set_fee(FeeType::Success, Fee { base_fee: Satoshi(5), fee_rate: FeeRate(0.02) });
+    println!(
+        "Payment of {:?} requires fee {:?}",
+        test_amount,
+        ch_in_dir.requires_fee(None, &test_amount));
+    
+    let ch = Channel {
+        capacity: Satoshi(1000),
+        cid: String::from("cid0"),
+        channel_in_direction: HashMap::from([
+            (Direction::Alph, Some(ch_in_dir)),
+            (Direction::NonAlph, None),
+        ])
+    };
+
+    //println!("{:#?}", ch);
 }
