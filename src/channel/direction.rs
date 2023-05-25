@@ -9,12 +9,13 @@ pub enum Direction {
     NonAlph,
 }
 impl Direction {
-    pub fn get_direction(a: &str, b: &str) -> Direction {
-        // can this be part of Direction enum, like a constructor?
+    pub fn new(a: &str, b: &str) -> Direction {
         match a.cmp(b) {
             Ordering::Less => Direction::Alph,
             Ordering::Greater => Direction::NonAlph,
-            Ordering::Equal => Direction::Alph, // FIXME: this sould be an assert or something
+            Ordering::Equal => {
+                panic!("Node IDs must be different to calculate direction, got {} and {}", a, b);
+            }
         }
     }
 }
