@@ -1,3 +1,6 @@
 pub mod channel;
-pub mod satoshi;
-mod fee;
+pub mod common;
+
+pub fn entry_function() {
+    println!("Entering library functionality");
+}
