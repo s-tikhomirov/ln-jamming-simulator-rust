@@ -174,7 +174,6 @@ impl ChannelInDirection {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::common::paymentid::PaymentId as PaymentId;
     use crate::common::paymentresult::PaymentResult as PaymentResult;
     use crate::common::satoshi::Satoshi as Satoshi;
     use crate::common::fee::FeeRate as FeeRate;
@@ -243,7 +242,6 @@ mod tests {
         assert_queue_is_empty(&ch_in_dir);
         // push one HTLC
         let htlc1 = Htlc::new(
-            PaymentId(String::from("htlc1")),
             Satoshi(1),
         PaymentResult::SUCCESS,
         );
@@ -255,7 +253,6 @@ mod tests {
         assert_eq!(ch_in_dir.get_earliest_htlc_resolution_time(), &Timestamp(10));
         // push another HTLC
         let htlc2 = Htlc::new(
-            PaymentId(String::from("htlc2")),
             Satoshi(2),
         PaymentResult::SUCCESS,
         );
@@ -267,14 +264,12 @@ mod tests {
         assert_eq!(ch_in_dir.get_earliest_htlc_resolution_time(), &Timestamp(5));
         // pop htlc - the lower-timestamp one is popped first
         let htlc_popped = ch_in_dir.pop_htlc();
-        let (htlc, resolution_time) = htlc_popped;
-        assert_eq!(htlc.get_id(), &PaymentId(String::from("htlc2")));
+        let (_htlc, resolution_time) = htlc_popped;
         assert_eq!(resolution_time, Timestamp(5));
         assert_eq!(ch_in_dir.get_earliest_htlc_resolution_time(), &Timestamp(10));
         // pop htlc - the other one is popped second
         let htlc_popped = ch_in_dir.pop_htlc();
-        let (htlc, resolution_time) = htlc_popped;
-        assert_eq!(htlc.get_id(), &PaymentId(String::from("htlc1")));
+        let (_htlc, resolution_time) = htlc_popped;
         assert_eq!(resolution_time, Timestamp(10));
         // the queue is empty now
         assert_queue_is_empty(&ch_in_dir);
@@ -287,17 +282,14 @@ mod tests {
             Some(4), None, None, None, None,
         );
         let htlc1 = Htlc::new(
-            PaymentId(String::from("htlc1")),
             Satoshi(100),
         PaymentResult::SUCCESS,
         );
         let htlc2 = Htlc::new(
-            PaymentId(String::from("htlc2")),
             Satoshi(200),
         PaymentResult::SUCCESS,
         );
         let htlc3 = Htlc::new(
-            PaymentId(String::from("htlc3")),
             Satoshi(300),
         PaymentResult::SUCCESS,
         );

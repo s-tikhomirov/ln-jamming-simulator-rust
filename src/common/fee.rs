@@ -6,10 +6,10 @@ pub enum FeeType {
     Success,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct FeeRate(pub f64);
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Fee {
     base_fee: Satoshi,
     fee_rate: FeeRate,

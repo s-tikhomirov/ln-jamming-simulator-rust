@@ -1,5 +1,5 @@
 // FIXME: can't derive Eq, although we can compare numbers for equality - ?
-#[derive(Debug, PartialEq, Eq, Hash)]
+#[derive(Debug, PartialEq, Eq, Hash, Clone, Copy)]
 pub struct Satoshi(pub u64);
 
 impl Satoshi {
