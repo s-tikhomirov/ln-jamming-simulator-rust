@@ -228,7 +228,7 @@ mod tests {
     #[should_panic]
     pub fn channelindirection_no_earliest_timestamp_in_empty_queue() {
         let ch_in_dir = ChannelInDirection::new_default();
-        let t = ch_in_dir.get_earliest_htlc_resolution_time();
+        let _t = ch_in_dir.get_earliest_htlc_resolution_time();
     }
 
     #[test]
