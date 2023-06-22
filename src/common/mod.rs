@@ -7,4 +7,5 @@ pub mod paymentresult;
 pub mod timestamp;
 pub mod duration;
 pub mod params;
-pub mod errortypes;
+pub mod errortype;
+pub mod scheduletype;

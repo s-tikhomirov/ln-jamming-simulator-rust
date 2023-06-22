@@ -1,8 +1,11 @@
 use priority_queue::PriorityQueue;
 use std::cmp::Reverse;
 
+use crate::common;
+use crate::common::nodeid::NodeId;
 use crate::common::timestamp::Timestamp;
 use crate::common::satoshi::Satoshi as Satoshi;
+use crate::common::scheduletype::ScheduleType as ScheduleType;
 
 use super::event::Event;
 
@@ -33,9 +36,6 @@ impl Schedule {
             None => (None, None)
         }
     }
-    // pub fn get_all_events(&mut self) -> Vec<(Timestamp, Event)> {
-    //     // TODO
-    // }
     pub fn no_more_events(&self) -> bool {
         self.schedule.is_empty()
     }
@@ -48,8 +48,7 @@ impl Schedule {
     }
 }
 
-// TODO: implement HonestSchedule and JammingSchedule as
-// implementations of Schedule trait (?)
+
 
 #[cfg(test)]
 mod tests {
@@ -95,6 +94,8 @@ mod tests {
         assert_eq!(time, Timestamp(6));
     }
     
+    #[test]
+    #[should_panic]
     fn schedule_push_post_end_time_not_allowed() {
         let mut sch = Schedule::new(Timestamp(10));
         let event = Event::new(
@@ -106,7 +107,7 @@ mod tests {
             None,
         );
         // it's OK for an event to _resolve_ after schedule's end time
-        // it's not OK to _start_ after schedule's end time
+        // it's not OK for an event to _start_ after schedule's end time
         sch.put_event(Timestamp(11), event, Timestamp(5));
     }
     

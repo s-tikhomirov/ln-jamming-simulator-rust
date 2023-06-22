@@ -2,7 +2,7 @@ use crate::common::satoshi::Satoshi as Satoshi;
 use crate::common::fee::{Fee as Fee, FeeType as FeeType};
 use crate::common::timestamp::{Timestamp as Timestamp, self};
 use crate::common::params as params;
-use crate::common::errortypes::ErrorType as ErrorType;
+use crate::common::errortype::ErrorType as ErrorType;
 
 use super::htlc::Htlc as Htlc;
 

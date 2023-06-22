@@ -1,8 +1,10 @@
+use super::satoshi::Satoshi;
+
 // ProtocolParams
 // usize here because we use it as priority queue size
 pub const MAX_NUM_SLOTS: usize = 483;
 
-pub const DUST_LIMIT: u16 = 354;
+pub const DUST_LIMIT: Satoshi = Satoshi(354);
 pub const MAX_ROUTE_LENGTH: u16 = 20;
 
 // FeeParams
