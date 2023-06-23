@@ -1,8 +1,13 @@
 use priority_queue::PriorityQueue;
 use std::cmp::Reverse;
 
+extern crate rand;
+use rand::{thread_rng, Rng};
+
 use crate::common;
+use crate::common::duration::Duration;
 use crate::common::nodeid::NodeId;
+use crate::common::paymentresult::PaymentResult;
 use crate::common::timestamp::Timestamp;
 use crate::common::satoshi::Satoshi as Satoshi;
 use crate::common::scheduletype::ScheduleType as ScheduleType;
@@ -39,12 +44,25 @@ impl Schedule {
     pub fn no_more_events(&self) -> bool {
         self.schedule.is_empty()
     }
-    pub fn put_event(&mut self, event_time: Timestamp, event: Event, current_time: Timestamp) {
-        // we can only put events for the future
-        assert!(current_time < event_time);
+    pub fn put_event(&mut self, event_time: Timestamp, event: Event, current_time: Option<Timestamp>) {
+        match current_time {
+            Some(current_time) => {
+                // we can only put events for the future
+                assert!(current_time < event_time);
+            }
+            None => {}
+        }
         // we cannot put events after the schedule end time
         assert!(event_time <= self.end_time);
         self.schedule.push(event, Reverse(event_time));
+    }
+    // TODO: implement this
+    pub fn populate(&mut self, success_probability: f64) {
+        // assert that probability is in [0.0, 1.0]
+        // initialize randmness and current time
+        // loop until time is up and push events into the schedule
+        // success is randomized w.r.t. success_probability
+        // amount is randomized with gen_range
     }
 }
 
@@ -55,6 +73,8 @@ mod tests {
     use crate::common::{nodeid::NodeId, duration::Duration, paymentresult::PaymentResult};
 
     use super::*;
+
+    // TODO: add test for populate schedule
 
     #[test]
     pub fn schedule_push_pop() {
@@ -77,10 +97,10 @@ mod tests {
             None,
         );
         // resolves at time 11 (that's OK)
-        sch.put_event(Timestamp(6), event1, Timestamp(0));
+        sch.put_event(Timestamp(6), event1, Some(Timestamp(0)));
         assert!(!sch.no_more_events());
         // resolves at time 8
-        sch.put_event(Timestamp(3), event2, Timestamp(0));
+        sch.put_event(Timestamp(3), event2, Some(Timestamp(0)));
         assert!(!sch.no_more_events());
         // pop earlier event
         let (time, event) = sch.get_event();
@@ -108,7 +128,7 @@ mod tests {
         );
         // it's OK for an event to _resolve_ after schedule's end time
         // it's not OK for an event to _start_ after schedule's end time
-        sch.put_event(Timestamp(11), event, Timestamp(5));
+        sch.put_event(Timestamp(11), event, Some(Timestamp(5)));
     }
     
 }

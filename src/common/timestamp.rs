@@ -2,7 +2,7 @@ use core::time;
 
 use crate::common::duration::Duration as Duration;
 
-#[derive(Debug, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Clone)]
 pub struct Timestamp(pub u64);
 
 impl Timestamp {

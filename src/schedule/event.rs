@@ -3,12 +3,12 @@ use crate::common::{nodeid::NodeId, satoshi::Satoshi, duration::Duration, paymen
 #[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Event {
     // do we need ID here?
-    sender: NodeId,
-    receiver: NodeId,
-    amount: Satoshi,
-    processing_delay: Duration,
-    desired_result: PaymentResult,
-    must_route_via_nodes: Option<Vec<NodeId>>,
+    pub sender: NodeId,
+    pub receiver: NodeId,
+    pub amount: Satoshi,
+    pub processing_delay: Duration,
+    pub desired_result: PaymentResult,
+    pub must_route_via_nodes: Option<Vec<NodeId>>,
 }
 
 impl Event {
